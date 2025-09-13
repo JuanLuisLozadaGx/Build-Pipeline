@@ -33,9 +33,14 @@
 
     <st:bind var="buildPipelineViewProxy" value="${from}" />
     <script type="text/javascript">
+        // Make rootURL available globally for Handlebars helpers
+        window.jenkinsRootURL = "${rootURL}";
         var buildCardTemplateSource = jQuery("#build-card-template").html();
         var projectCardTemplateSource = jQuery("#project-card-template").html();
         var buildPipeline = new BuildPipeline(buildPipelineViewProxy, Handlebars.compile(buildCardTemplateSource), Handlebars.compile(projectCardTemplateSource), ${from.getRefreshFrequencyInMillis()});
+        
+        // Initialize auto-refresh settings
+        buildPipeline.initAutoRefresh();
     </script>
 
     <st:include page="buildCardHelpers.jelly"
@@ -82,6 +87,13 @@
                         <span>History</span>
                         </a>
                     </div>
+
+                <div class="icon-container">
+                    <a href="#" id="auto-refresh-toggle" onclick="buildPipeline.toggleAutoRefresh(); return false;" title="Toggle auto-refresh">
+                        <l:icon src="icon-refresh icon-md" alt="Auto Refresh" />
+                        <span id="auto-refresh-text">Auto Refresh: ON</span>
+                    </a>
+                </div>
 
                 <j:if test="${from.hasConfigurePermission()}">
                     <div class="icon-container">

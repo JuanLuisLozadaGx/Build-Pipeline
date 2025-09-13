@@ -750,6 +750,16 @@ public class BuildPipelineView extends View {
     }
 
     /**
+     * Handles the deletion of this view
+     */
+    public synchronized void doDelete(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
+        checkPermission(View.DELETE);
+        
+        getOwner().deleteView(this);
+        rsp.sendRedirect2(req.getContextPath() + "/" + getOwner().getUrl());
+    }
+
+    /**
      * A class that groups together the console output link style options
      */
     private static final class LinkStyle {

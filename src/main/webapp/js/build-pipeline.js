@@ -1,3 +1,22 @@
+/**
+ * Check if the current page/tab is visible using the Page Visibility API
+ * This helps pause auto-refresh when the tab is not visible to save resources
+ */
+function isPageVisible() {
+    // Check for Page Visibility API support
+    if (typeof document.hidden !== "undefined") {
+        return !document.hidden;
+    } else if (typeof document.mozHidden !== "undefined") {
+        return !document.mozHidden;
+    } else if (typeof document.msHidden !== "undefined") {
+        return !document.msHidden;
+    } else if (typeof document.webkitHidden !== "undefined") {
+        return !document.webkitHidden;
+    }
+    // Fallback: assume page is visible if API is not supported
+    return true;
+}
+
 var BuildPipeline = function(viewProxy, buildCardTemplate, projectCardTemplate, refreshFrequency){
 	this.buildCardTemplate = buildCardTemplate;
 	this.projectCardTemplate = projectCardTemplate;
@@ -5,13 +24,15 @@ var BuildPipeline = function(viewProxy, buildCardTemplate, projectCardTemplate, 
     this.projectProxies = {};
 	this.viewProxy = viewProxy;
 	this.refreshFrequency = refreshFrequency;
+	this.autoRefreshEnabled = true; // Auto refresh is enabled by default
 };
 
 BuildPipeline.prototype = {
 	showProgress : function(id, dependencies) {
 		var buildPipeline = this;
 		var intervalId = setInterval(function(){
-            if (isPageVisible()) {
+            // Check if auto-refresh is enabled and page is visible
+            if (buildPipeline.autoRefreshEnabled && isPageVisible()) {
 			    buildPipeline.buildProxies[id].asJSON(function(data){
                     var buildData = jQuery.parseJSON(data.responseObject());
                     if (buildData.build.progress > 0) {
@@ -111,6 +132,35 @@ BuildPipeline.prototype = {
 	},
 	hideModalSpinner : function() {
 		jQuery.fancybox.hideActivity();
+	},
+	toggleAutoRefresh : function() {
+		this.autoRefreshEnabled = !this.autoRefreshEnabled;
+		var statusText = this.autoRefreshEnabled ? "Auto Refresh: ON" : "Auto Refresh: OFF";
+		var toggleElement = jQuery("#auto-refresh-text");
+		if (toggleElement.length > 0) {
+			toggleElement.text(statusText);
+		}
+		
+		// Store preference in localStorage if available
+		if (typeof(Storage) !== "undefined") {
+			localStorage.setItem("buildPipelineAutoRefresh", this.autoRefreshEnabled.toString());
+		}
+		
+		console.log("Auto refresh " + (this.autoRefreshEnabled ? "enabled" : "disabled"));
+	},
+	initAutoRefresh : function() {
+		// Restore auto-refresh preference from localStorage
+		if (typeof(Storage) !== "undefined") {
+			var storedPreference = localStorage.getItem("buildPipelineAutoRefresh");
+			if (storedPreference !== null) {
+				this.autoRefreshEnabled = (storedPreference === "true");
+				var statusText = this.autoRefreshEnabled ? "Auto Refresh: ON" : "Auto Refresh: OFF";
+				var toggleElement = jQuery("#auto-refresh-text");
+				if (toggleElement.length > 0) {
+					toggleElement.text(statusText);
+				}
+			}
+		}
 	}
 
 }

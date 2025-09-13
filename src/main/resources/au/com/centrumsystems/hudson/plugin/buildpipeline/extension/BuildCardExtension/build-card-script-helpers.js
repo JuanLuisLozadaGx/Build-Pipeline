@@ -38,8 +38,7 @@ Handlebars.registerHelper('jsEscape', function(str) {
 
 /**
  * Safe console dialog helper that works with Jenkins URL structure
- * The key insight: We can't interpolate ${app.rootUrl} inside JavaScript, 
- * it must be handled at the Jelly template level
+ * Uses the global jenkinsRootURL variable set by Jelly template
  */
 Handlebars.registerHelper('safeConsoleDialog', function(buildUrl, projectName, buildNumber) {
     // Escape only the display parameters for XSS protection
@@ -55,10 +54,14 @@ Handlebars.registerHelper('safeConsoleDialog', function(buildUrl, projectName, b
     
     var safeBuildNumber = (buildNumber || '').toString().replace(/[^0-9]/g, '');
     
-    // Return the exact pattern from the original working code
-    // The ${app.rootUrl} will be processed by Jelly, {{build.url}} by Handlebars
+    // Clean and validate the build URL
+    var cleanBuildUrl = (buildUrl || '').toString().replace(/['"<>&]/g, '');
+    
+    // Use window.jenkinsRootURL that was set globally in bpp.jelly
+    var fullUrl = (window.jenkinsRootURL || '') + '/' + cleanBuildUrl + 'console';
+    
     return new Handlebars.SafeString(
-        "buildPipeline.fillDialog('${app.rootUrl}{{build.url}}console', 'Console output for " + safeProjectName + " #" + safeBuildNumber + "')"
+        "buildPipeline.fillDialog('" + fullUrl + "', 'Console output for " + safeProjectName + " #" + safeBuildNumber + "')"
     );
 });
 
